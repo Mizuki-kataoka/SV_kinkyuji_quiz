@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SV緊急時対応クイズ</title>
+  <link rel="stylesheet" href="SV_kinkyu1.css">
+</head>
+<body>
+  <div class="container">
+    <h1>SV緊急時対応クイズ</h1>
+    <h2>危険行為を行う人物編（全5問）</h2>
+
+    <!-- 名前入力 -->
+    <label>
+      名前：
+      <input id="username" type="text" placeholder="ニックネーム（20文字以内）" maxlength="20">
+    </label>
+
+    <!-- クイズ出題エリア -->
+    <div id="quiz"></div>
+
+    <!-- 回答ボタン -->
+    <button id="submit">回答を送信</button>
+
+    <!-- 結果 -->
+    <div id="result"></div>
+
+    <!-- ランキング -->
+    <h2>ランキング</h2>
+    <ol id="ranking"></ol>
+    <button id="resetRanking">ランキングをリセット</button>
+  </div>
+
+  <script>
+  //―――― 問題データ ――――
+  const questions = [
+    { q: '【危険行為を行う人物】対象者が店内にいない場合の対応の流れは？', 
+      choices: ['店舗を施錠し安全を確保➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+      '非常通報ボタンを押す➡お客様に店内にとどまるよう促す',
+      '警察へ連絡し安全を確保➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+      '店舗LINEで西脇社員・綱井社員をメンションし報告➡お客様に店内にとどまるよう促す'], answer:[0], multiple: false},
+      { q: '【危険行為を行う人物】対象者が店内にいる場合の流れは？', 
+      choices: ['避難誘導と安全確保を行う➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+      '店内に待機する➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+      '避難誘導と安全確保を行う➡非常通報ボタンを押す',
+    '警察へ連絡する➡店内に待機する'], answer:[2], multiple: false},
+      { q: '【危険行為を行う人物】安全確保とは何を指すか？【２つ選択】', 
+      choices: ['対象者から距離を取る','防具になるものを手元に置く','さすまた等を用いて対象者を制圧する','外部に連絡する','ただひたすらに逃げる'], answer: [0,1], multiple: true },
+      { q: '【危険行為を行う人物】店内にケガ人がいる場合の対応の流れは？', 
+      choices: ['すぐに応急処置を行う➡119番通報し、救急隊員の指示に従う',
+      '119番通報する➡AEDを用意する',
+      '119番通報し、救急隊員の指示に従う➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+    'すぐに応急処置を行う➡店舗LINEで西脇社員・綱井社員をメンションし報告'], answer: [2], multiple: false },
+      { q: '【危険行為を行う人物】店内にケガ人がいない場合の対応の流れは？', 
+      choices: ['対象者を刺激せず、警察・警備の到着まで待機する➡店舗LINEで西脇社員・綱井社員をメンションし報告',
+      '店舗LINEで西脇社員・綱井社員をメンションし報告➡対象者への退店を促す',
+      'さすまた等を用いて対象者を制圧する➡警察・警備の到着後、身柄を引き渡す',
+    '対象者を刺激せず、警察・警備の到着後、営業を再開する'], answer: [0], multiple: false },
+    ];
+
+  //―――― ヘルパー ――――
+  function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  //―――― 状態 ――――
+  let current = 0;
+  let score   = 0;
+  let history = [];
+
+  //―――― DOM取得 ――――
+  const username  = document.getElementById('username');
+  const quizEl    = document.getElementById('quiz');
+  const submitBtn = document.getElementById('submit');
+  const resultEl  = document.getElementById('result');
+  const rankEl    = document.getElementById('ranking');
+  const resetBtn  = document.getElementById('resetRanking');
+
+  //―――― 初期化 ――――
+  submitBtn.disabled = true;
+  renderQuestion();
+  renderRanking(JSON.parse(localStorage.getItem('quizRanking_2-1')||'[]'));
+
+  username.addEventListener('input', () => {
+    submitBtn.disabled = !username.value.trim();
+  });
+
+  submitBtn.addEventListener('click', () => {
+    const name = username.value.trim();
+    if (!name) return alert('名前を入力してください');
+
+    const checked = document.querySelectorAll('input[name="choice"]:checked');
+    if (!checked.length) return alert('選択肢を選んでください');
+
+    const selected = Array.from(checked).map(c => parseInt(c.value, 10));
+    // ↓ここで一度だけ分割代入
+    const { q, choices, answer, multiple } = questions[current];
+
+    const isCorrect = multiple
+      ? (selected.length === answer.length && answer.every(i => selected.includes(i)))
+      : (selected[0] === answer[0]);
+    if (isCorrect) score++;
+
+    // 履歴登録
+    history.push({ q, choices, answer, multiple, selected, isCorrect });
+
+    // アニメーション＆次画面
+    const cls = isCorrect ? 'correct' : 'wrong';
+    quizEl.classList.add(cls);
+    quizEl.addEventListener('animationend', () => {
+      quizEl.classList.remove(cls);
+      current < questions.length? renderQuestion() : finishQuiz();
+    }, { once: true });
+    current++;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (confirm('ランキングを本当にリセットしますか？')) {
+      localStorage.removeItem('quizRanking_2-1');
+      renderRanking([]);
+    }
+  });
+
+  //―――― 問題描画 ――――
+  function renderQuestion() {
+    const { q, choices, multiple } = questions[current];
+    let html = `<p>${current+1}. ${q}</p>`;
+    shuffleArray(choices.map((t,i)=>({t,i}))).forEach(({t,i}) => {
+      const type = multiple ? 'checkbox' : 'radio';
+      html += `
+        <label>
+          <input type="${type}" name="choice" value="${i}">
+          ${t}
+        </label>`;
+    });
+    quizEl.innerHTML = html;
+  }
+
+  //―――― 終了処理 ――――
+  function finishQuiz() {
+    const name = username.value.trim();
+    let html = `<p>${name} さんの点数：<strong>${score}</strong> / ${questions.length}</p>`;
+
+    html += '<h3>回答結果一覧</h3><ol>';
+    history.forEach((e, idx) => {
+      const { q, choices, answer, selected, isCorrect } = e;
+      const items = choices.map((txt,i) => {
+        let mark = selected.includes(i) && answer.includes(i) ? '✅'
+                 : selected.includes(i)               ? '❌'
+                 : answer.includes(i)                 ? '✔' : '';
+        return `<li style="list-style:none;">${mark} ${txt}</li>`;
+      }).join('');
+      html += `
+        <li>
+          <strong>Q${idx+1}:</strong> ${q}
+          <ul>${items}</ul>
+          <div style="color:${isCorrect?'green':'red'};">${isCorrect?'正解':'不正解'}</div>
+        </li>`;
+    });
+    html += '</ol>';
+
+      function getComment(score, total) {
+  if      (score === total)      return '🤩 完璧すぎる！SVシートで最終確認をしましょう！';
+  else if (score >= 4)     return '🥸 及第点。SVシートをちゃんと覚えましょう！';
+  else if (score >= 2)     return '🤯 こんなクイズもできなかったら本当のSVには何も言えないことでしょう';
+  else                      return '💀 今すぐSVシートをくまなく見て覚えてください';
+}
+const comment = getComment(score, questions.length);
+  html += `<p class="comment">${comment}</p>`;
+
+    resultEl.innerHTML = html;
+    updateRanking(name, score);
+  }
+
+  //―――― ランキング更新 ――――
+  function updateRanking(name, score) {
+    const key = 'quizRanking_2-1';
+    const data = JSON.parse(localStorage.getItem(key) || '[]');
+    const ex = data.find(x=>x.name===name);
+    if (ex) { if (score>ex.score) ex.score = score; }
+    else    { data.push({name,score}); }
+    data.sort((a,b)=>b.score-a.score);
+    localStorage.setItem(key, JSON.stringify(data));
+    renderRanking(data, name, score);
+  }
+
+  //―――― ランキング描画 ――――
+  function renderRanking(data, curName, curScore) {
+    let html = '', prev = null, rank=0;
+    data.forEach((x,i)=>{
+      if (x.score !== prev) { rank = i+1; prev = x.score; }
+      if (rank>10) return;
+      const cls = x.name===curName&&x.score===curScore? ' class="highlight"' : '';
+      html += `<li${cls}>${rank}位：${x.name}（${x.score}点）</li>`;
+    });
+    rankEl.innerHTML = html;
+  }
+  </script>
+</body>
+</html>
