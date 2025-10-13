@@ -172,11 +172,12 @@ const comment = getComment(score, questions.length);
 
   //―――― ランキング更新 ――――
   function updateRanking(name, score) {
-    const key = 'quizRanking_2-1';
+    const key = 'quizRanking_3-1';
     const data = JSON.parse(localStorage.getItem(key) || '[]');
+    const now = new Date().toLocaleString();
     const ex = data.find(x=>x.name===name);
-    if (ex) { if (score>ex.score) ex.score = score; }
-    else    { data.push({name,score}); }
+    if (ex) { if (score>ex.score) {ex.score = score; ex.date = now;}}
+    else    { data.push({name,score, date: now}); }
     data.sort((a,b)=>b.score-a.score);
     localStorage.setItem(key, JSON.stringify(data));
     renderRanking(data, name, score);
@@ -195,4 +196,5 @@ const comment = getComment(score, questions.length);
   }
   </script>
 </body>
+
 </html>
