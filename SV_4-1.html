@@ -151,11 +151,11 @@
         </li>`;
     });
     html += '</ol>';
-
-      function getComment(score, total) {
+    
+function getComment(score, total) {
   if      (score === total)      return '🤩 完璧すぎる！SVシートで最終確認をしましょう！';
-  else if (rate >= 1)     return '🤯 こんなクイズもできなかったら本当のSVには何も言えないことでしょう';
-  else                      return '💀 今すぐSVシートをくまなく見て覚えてください';
+  else if (score >= 2)           return '🥸 及第点。SVシートをちゃんと覚えましょう！';
+  else                           return '💀 今すぐSVシートをくまなく見て覚えてください';
 }
 const comment = getComment(score, questions.length);
   html += `<p class="comment">${comment}</p>`;
@@ -192,3 +192,4 @@ const comment = getComment(score, questions.length);
 </body>
 
 </html>
+
