@@ -77,7 +77,7 @@
   //―――― 初期化 ――――
   submitBtn.disabled = true;
   renderQuestion();
-  renderRanking(JSON.parse(localStorage.getItem('quizRanking_2-1')||'[]'));
+  renderRanking(JSON.parse(localStorage.getItem('quizRanking_4-1')||'[]'));
 
   username.addEventListener('input', () => {
     submitBtn.disabled = !username.value.trim();
@@ -114,7 +114,7 @@
 
   resetBtn.addEventListener('click', () => {
     if (confirm('ランキングを本当にリセットしますか？')) {
-      localStorage.removeItem('quizRanking_2-1');
+      localStorage.removeItem('quizRanking_4-1');
       renderRanking([]);
     }
   });
@@ -160,6 +160,7 @@
 function getComment(score, total) {
   if      (score === total)      return '🤩 完璧すぎる！SVシートで最終確認をしましょう！';
   else if (score >= 2)           return '🥸 及第点。SVシートをちゃんと覚えましょう！';
+  else if (score >= 1)           return '🤯 こんなクイズもできなかったら本当のSVには何も言えないことでしょう';
   else                           return '💀 今すぐSVシートをくまなく見て覚えてください';
 }
 const comment = getComment(score, questions.length);
